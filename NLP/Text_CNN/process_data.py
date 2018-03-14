@@ -163,20 +163,21 @@ def get_train_test_data(word_vecs,revs,cv_id=0,sent_length = 56,default_values=0
     # 1 'I like this movie' 4 3
     data_set_df = data_set_df.sample(frac=1)#打乱顺序
 
-    data_set_cv = data_set_df[data_set_df['spilt'] == cv_id] #测试集
-    data_set_cv_other = data_set_df[data_set_df['spilt'] != cv_id] #训练集
+    data_set_cv_train = data_set_df[data_set_df['spilt'] != cv_id]  # 训练集
+    data_set_cv_test = data_set_df[data_set_df['spilt'] == cv_id] #测试集
 
-    train_y_1 = np.array(data_set_cv_other['y'].tolist(),dtype='int')
+    # train
+    train_y_1 = np.array(data_set_cv_train['y'].tolist(),dtype='int')
     train_y_2 = list(map(get_contrast,train_y_1))
     train_y = np.array([train_y_1,train_y_2]).T
 
-    test_y_1 = np.array(data_set_cv['y'].tolist(),dtype='int')
-    test_y_2 = map(get_contrast,test_y_1)
+    test_y_1 = np.array(data_set_cv_test['y'].tolist(),dtype='int')
+    test_y_2 = list(map(get_contrast,test_y_1))
     test_y = np.array([test_y_1,test_y_2]).T
 
 
-    train_sentence_list = data_set_cv_other['text'].tolist()
-    test_sentence_list = data_set_cv['text'].tolist()
+    train_sentence_list = data_set_cv_train['text'].tolist()
+    test_sentence_list = data_set_cv_test['text'].tolist()
 
     train_x = get_vec_by_sentence_list(word_vecs,train_sentence_list,sent_length,default_values,vec_size)
     test_x = get_vec_by_sentence_list(word_vecs,test_sentence_list,sent_length,default_values,vec_size)

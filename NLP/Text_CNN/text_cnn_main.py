@@ -43,7 +43,7 @@ if __name__ == '__main__':
                                      help='the train do not shuffer')
 
     parse.add_argument('--learnrate', type=float, dest='learnrate', help='the NN learnRate', default=0.05)
-    parse.add_argument('--epochs', type=int, dest='epochs', help='the model train epochs', default=2)
+    parse.add_argument('--epochs', type=int, dest='epochs', help='the model train epochs', default=10)
     parse.add_argument('--batch_size', type=int, dest='batch_size', help='the train gd batch size.(50-300)', default=50)
     parse.add_argument('--dropout_pro', type=float, dest='dropout_pro', help='the nn layer dropout_pro', default=0.5)
 
@@ -83,9 +83,9 @@ if __name__ == '__main__':
         # step3 create TextCNN model
         text_cnn = TextCNN(shuffer_falg,static_falg,filter_numbers,filter_sizes,sentence_max_len,embedding_size,args.learnrate,args.epochs,args.batch_size,args.dropout_pro)
         # step4 start train
-        text_cnn.train(train_x[300:],train_y[300:])
+        text_cnn.train(train_x,train_y)
         # step5 validataion
-        loss,accur = text_cnn.validataion(train_x[0:300], train_y[0:300])
+        accur,loss = text_cnn.validataion(test_x, test_y)
         #
         results.append(accur)
         print('cv {} accur is :{:.3f} loss is {:.3f}'.format(index+1,accur,loss))

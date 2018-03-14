@@ -33,13 +33,14 @@ class TextCNN():
         with self.train_graph.as_default():
             # self.input_x = tf.placeholder(dtype=tf.float32,shape=[None,sentence_length],name='input_x')
             # 1 input layer
-
+            self.embedding_layer = tf.placeholder(dtype=tf.float32, shape=[None, sentence_length, embedding_size],
+                                                  name='embeding_layer')
             if self.__static_falg:
                 # the word vectors are not allowed to change
-                self.embedding_layer = tf.placeholder(dtype=tf.float32,shape=[None,sentence_length,embedding_size],name='embeding_layer')
                 self.embedding_layer_expand = tf.expand_dims(self.embedding_layer,-1)#[None,sentence_length,embedding_size,1]
-            # else:
-            #     self.embedding_layer = tf.Variable(dtype=tf.float32)
+            else:
+                self.unstatic_embedding_layer = tf.Variable(self.embedding_layer,name='embedding_layer_unstatic')
+                self.embedding_layer_expand = tf.expand_dims(self.unstatic_embedding_layer,-1)
             self.input_y = tf.placeholder(dtype=tf.int32,shape=[None,2],name='input_y')
             self.dropout_pro = tf.placeholder(dtype=tf.float32,name='dropout_pro')
             self.learning_rate = tf.placeholder(dtype=tf.float32,name='learning_rate')
@@ -115,6 +116,7 @@ class TextCNN():
         for epoch in range(self.epochs):
             # pdb.set_trace()
             train_batch = self.__get_batchs(train_x, train_y, self.batch_size)
+            train_loss, train_acc, count = 0.0, 0.0, 0
             for batch_i in range(len(train_x)//self.batch_size):
                 x,y = next(train_batch)
                 # print('--------',np.array(x).shape)
@@ -126,12 +128,12 @@ class TextCNN():
                 }
 
                 _,summarys,loss,accuracy = self.session.run([self.train_op,self.merged,self.loss,self.accuracy],feed_dict=feed)
-
+                train_loss, train_acc, count = train_loss + loss, train_acc + accuracy, count + 1
                 self.train_writer.add_summary(summarys,epoch)
                 # each 5 batch print log
                 if (batch_i+1) % 15 == 0:
                     print('Epoch {:>3} Batch {:>4}/{} train_loss = {:.3f} accuracy = {:.3f}'.
-                          format(epoch,batch_i,(len(train_x)//self.batch_size),loss,accuracy))
+                          format(epoch,batch_i,(len(train_x)//self.batch_size),train_loss/float(count),train_acc/float(count)))
 
     def validataion(self,test_x, test_y):
         test_batch = self.__get_batchs(test_x,test_y,self.batch_size)
@@ -142,12 +144,12 @@ class TextCNN():
                 self.embedding_layer: x,
                 self.input_y: y,
                 self.dropout_pro: self.dropout_pro_item,
-                self.learning_rate: self.learning_rate_item
+                self.learning_rate: 1.0
             }
             loss ,accuracy = self.session.run([self.loss,self.accuracy],feed_dict=feed)
-            eval_loss ,eval_acc ,count  = eval_acc+accuracy ,eval_acc+loss ,count+1
+            eval_loss ,eval_acc ,count  = eval_loss+loss ,eval_acc+accuracy ,count+1
             # print('validataion_{}_accuracy is {:.3f}'.format(index,accuracy))
-        return accuracy/count,loss/count
+        return eval_acc/float(count),eval_loss/float(count)
     def close(self):
         self.session.close()
         self.train_writer.close()
