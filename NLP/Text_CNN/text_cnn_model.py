@@ -16,7 +16,7 @@ class TextCNN():
     __shuffer_falg = False
     __static_falg = True
 
-    def __init__(self,shuffer_falg, static_falg, filter_numbers, filter_sizes, sentence_length,embedding_size,learnrate, epochs, batch_size, dropout_pro):
+    def __init__(self,W_list,shuffer_falg, static_falg, filter_numbers, filter_sizes,sentence_length,embedding_size,learnrate, epochs, batch_size, dropout_pro):
 
         self.__shuffer_falg = shuffer_falg
         self.__static_falg = static_falg
@@ -31,22 +31,26 @@ class TextCNN():
         tf.reset_default_graph()
         self.train_graph = tf.Graph()
         with self.train_graph.as_default():
-            # self.input_x = tf.placeholder(dtype=tf.float32,shape=[None,sentence_length],name='input_x')
             # 1 input layer
-            self.embedding_layer = tf.placeholder(dtype=tf.float32, shape=[None, sentence_length, embedding_size],
-                                                  name='embeding_layer')
-            if self.__static_falg:
-                # the word vectors are not allowed to change
-                self.embedding_layer_expand = tf.expand_dims(self.embedding_layer,-1)#[None,sentence_length,embedding_size,1]
-            else:
-                self.unstatic_embedding_layer = tf.Variable(self.embedding_layer,name='embedding_layer_unstatic')
-                self.embedding_layer_expand = tf.expand_dims(self.unstatic_embedding_layer,-1)
-            self.input_y = tf.placeholder(dtype=tf.int32,shape=[None,2],name='input_y')
-            self.dropout_pro = tf.placeholder(dtype=tf.float32,name='dropout_pro')
-            self.learning_rate = tf.placeholder(dtype=tf.float32,name='learning_rate')
+            self.input_x = tf.placeholder(dtype=tf.int32,shape=[None,sentence_length],name='input_x')
+            self.input_y = tf.placeholder(dtype=tf.int32, shape=[None, 2], name='input_y')
+            self.dropout_pro = tf.placeholder(dtype=tf.float32, name='dropout_pro')
+            self.learning_rate = tf.placeholder(dtype=tf.float32, name='learning_rate')
             self.l2_loss = tf.constant(0.0)
+            # self.embedding_layer = tf.placeholder(dtype=tf.float32, shape=[self.batch_size, sentence_length, embedding_size],
+            #                                       name='embedding_layer')
+
+
 
             #2 embedding layer
+            with tf.name_scope('embedding_layer'):
+                train_bool = not self.__static_falg
+                # tf.convert_to_tensor(W_list,dtype=tf.float32)
+                # pdb.set_trace()
+                self.embedding_layer_W = tf.Variable(initial_value=W_list,dtype=tf.float32, trainable=train_bool, name='embedding_layer_W')
+                print("ssssssss")
+                self.embedding_layer_layer = tf.nn.embedding_lookup(self.embedding_layer_W, self.input_x)
+                self.embedding_layer_expand = tf.expand_dims(self.embedding_layer_layer, -1)
 
             # with tf.name_scope('word_embedding_layer'):
             #
@@ -110,8 +114,9 @@ class TextCNN():
             self.merged = tf.summary.merge_all()
             self.train_writer = tf.summary.FileWriter('./NLP/log/text_cnn', graph=self.train_graph)
     def train(self,train_x,train_y):
+        # self.unstatic_embedding_layer
+        # print('11111111')
         self.session.run(tf.global_variables_initializer())
-
         #迭代训练
         for epoch in range(self.epochs):
             # pdb.set_trace()
@@ -119,14 +124,12 @@ class TextCNN():
             train_loss, train_acc, count = 0.0, 0.0, 0
             for batch_i in range(len(train_x)//self.batch_size):
                 x,y = next(train_batch)
-                # print('--------',np.array(x).shape)
                 feed = {
-                    self.embedding_layer:x,
+                    self.input_x:x,
                     self.input_y:y,
                     self.dropout_pro:self.dropout_pro_item,
                     self.learning_rate:self.learning_rate_item
                 }
-
                 _,summarys,loss,accuracy = self.session.run([self.train_op,self.merged,self.loss,self.accuracy],feed_dict=feed)
                 train_loss, train_acc, count = train_loss + loss, train_acc + accuracy, count + 1
                 self.train_writer.add_summary(summarys,epoch)

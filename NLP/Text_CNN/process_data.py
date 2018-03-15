@@ -7,7 +7,7 @@
 import pickle
 # import word2vec
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict,OrderedDict
 import re
 from tqdm import tqdm
 import pandas as pd
@@ -131,12 +131,32 @@ def get_vec_by_sentence_list(word_vecs,sentence_list,maxlen=56,values=0.,vec_siz
         words = sentence.split()
         for word in words:
             sentence_vec.append(word_vecs[word].tolist())
+
         # padding sentence vector to maxlen(w * h)
         sentence_vec = pad_sentences(sentence_vec,maxlen,values,vec_size)
         # add a sentence vector
         data.append(np.array(sentence_vec))
     return data
+def get_index_by_sentence_list(word_ids,sentence_list,maxlen=56):
+    indexs = []
+    words_length = len(word_ids)
+    for sentence in sentence_list:
+        # get a sentence
+        sentence_indexs = []
+        words = sentence.split()
+        for word in words:
+            sentence_indexs.append(word_ids[word])
+        # padding sentence to maxlen
+        length = len(sentence_indexs)
+        if length < maxlen:
+            for i in range(maxlen - length):
+                sentence_indexs.append(words_length)
+        # add a sentence vector
+        indexs.append(sentence_indexs)
 
+    return np.array(indexs)
+
+    pass
 def pad_sentences(data,maxlen=56,values=0.,vec_size = 300):
     """padding to max length
     :param data:要扩展的数据集
@@ -149,8 +169,9 @@ def pad_sentences(data,maxlen=56,values=0.,vec_size = 300):
             data.append(np.array([values]*vec_size))
     return data
 
-def get_train_test_data(word_vecs,revs,cv_id=0,sent_length = 56,default_values=0.,vec_size = 300):
+def get_train_test_data1(word_vecs,revs,cv_id=0,sent_length = 56,default_values=0.,vec_size = 300):
     """
+    获取的训练数据和测试数据是直接的数据
     :param revs:
     :param cv_id:
     :param sent_length:
@@ -175,21 +196,56 @@ def get_train_test_data(word_vecs,revs,cv_id=0,sent_length = 56,default_values=0
     test_y_2 = list(map(get_contrast,test_y_1))
     test_y = np.array([test_y_1,test_y_2]).T
 
-
     train_sentence_list = data_set_cv_train['text'].tolist()
     test_sentence_list = data_set_cv_test['text'].tolist()
+
 
     train_x = get_vec_by_sentence_list(word_vecs,train_sentence_list,sent_length,default_values,vec_size)
     test_x = get_vec_by_sentence_list(word_vecs,test_sentence_list,sent_length,default_values,vec_size)
 
 
     return train_x,train_y,test_x,test_y
+def get_train_test_data2(word_ids,revs,cv_id=0,sent_length = 56):
+    data_set_df = pd.DataFrame(revs)
 
+    # DataFrame
+    # y text num_words spilt
+    # 1 'I like this movie' 4 3
+    data_set_df = data_set_df.sample(frac=1)  # 打乱顺序
+
+    data_set_cv_train = data_set_df[data_set_df['spilt'] != cv_id]  # 训练集
+    data_set_cv_test = data_set_df[data_set_df['spilt'] == cv_id]  # 测试集
+
+    # train
+    train_y_1 = np.array(data_set_cv_train['y'].tolist(), dtype='int')
+    train_y_2 = list(map(get_contrast, train_y_1))
+    train_y = np.array([train_y_1, train_y_2]).T
+
+    test_y_1 = np.array(data_set_cv_test['y'].tolist(), dtype='int')
+    test_y_2 = list(map(get_contrast, test_y_1))
+    test_y = np.array([test_y_1, test_y_2]).T
+
+    train_sentence_list = data_set_cv_train['text'].tolist()
+    test_sentence_list = data_set_cv_test['text'].tolist()
+
+    train_x = get_index_by_sentence_list(word_ids,train_sentence_list,sent_length)
+    test_x = get_index_by_sentence_list(word_ids,test_sentence_list,sent_length)
+
+    return train_x,train_y,test_x,test_y
 #对0，1取反
 def get_contrast(x):
     return (2+~x)
 
-
+def getWordsVect(W):
+    word_ids = OrderedDict()
+    W_list = []
+    count =0
+    for word,vector in W.items():
+        W_list.append(vector.tolist())
+        word_ids[word] = count
+        count = count + 1
+    W_list.append([0.0]*300)
+    return word_ids,W_list
 
 
 

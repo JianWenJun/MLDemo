@@ -70,6 +70,9 @@ if __name__ == '__main__':
     if args.wordvec_flag:
         W = word_vecs
         pass
+    # pdb.set_trace()
+    word_ids,W_list = process_data.getWordsVect(W)
+
     # use static train or not
     static_falg = args.static_flag
     # use shuffer the data or not
@@ -79,9 +82,10 @@ if __name__ == '__main__':
     for index in tqdm(range(10)):
         #打调试断点
         # pdb.set_trace()
-        train_x, train_y, test_x, test_y = process_data.get_train_test_data(W,revs,index,sentence_max_len,default_values=0.0,vec_size=300)
+        # train_x, train_y, test_x, test_y = process_data.get_train_test_data1(W,revs,index,sentence_max_len,default_values=0.0,vec_size=300)
+        train_x, train_y, test_x, test_y = process_data.get_train_test_data2(word_ids,revs,index,sentence_max_len)
         # step3 create TextCNN model
-        text_cnn = TextCNN(shuffer_falg,static_falg,filter_numbers,filter_sizes,sentence_max_len,embedding_size,args.learnrate,args.epochs,args.batch_size,args.dropout_pro)
+        text_cnn = TextCNN(W_list,shuffer_falg,static_falg,filter_numbers,filter_sizes,sentence_max_len,embedding_size,args.learnrate,args.epochs,args.batch_size,args.dropout_pro)
         # step4 start train
         text_cnn.train(train_x,train_y)
         # step5 validataion
