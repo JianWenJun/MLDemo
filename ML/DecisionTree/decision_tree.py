@@ -59,10 +59,16 @@ def load_data(flods,remove_unKnowValue=True,remove_duplicates=True):
         print(adult_train_df.shape)
         print(adult_test_df.shape)
 
+    # 离散分段处理
+    # D = np.array(adult_train_df['label']).reshape(adult_train_df.shape[0], 1)
+    # age_did = devide_feature_value(adult_train_df['age'],D)
+
+
+
+
     print('last shape train-test =================')
     print(adult_train_df.shape)
     print(adult_test_df.shape)
-
     # construct data
 
     train_data_x = np.array(adult_train_df.iloc[:,0:14])
@@ -74,7 +80,37 @@ def load_data(flods,remove_unKnowValue=True,remove_duplicates=True):
 
     return train_data_x,train_data_y,test_data_x,test_data_y
 
+def devide_feature_value(series,D):
+    sets = set(series)
+    mid_value = []
+    a = float(sets.pop())
+    #取相邻点的中值
+    for par in sets:
+        a = (a + par) / 2.0
+        mid_value.append(a)
+        a = float(par)
+    max_divide = mid_value[0]
+    max_ent = 0.0
+    ent_d = calc_ent(D)
+    #查找最好的分裂点
+    for mid in mid_value:
+        Q1 = D[series < mid]
+        Q2 = D[series >= mid]
+        D_length = float(D.shape[0])
+        Q1_length = Q1.shape[0]
+        Q2_length = D_length - Q1_length
+        #条件熵
+        H_Q_D = Q1_length / D_length * calc_ent(Q1) + Q2_length / D_length * calc_ent(Q2)
+        H = ent_d - H_Q_D
+        if(H > max_ent):
+            max_ent = H
+            max_divide = mid
+    return max_divide
+
+
+
 # ######################### 数学计算 ################
+
 def calc_ent(D):
     """
     计算数据集D的信息熵(经验熵),输入的labels
@@ -113,7 +149,7 @@ def calc_ent_gain(A,D):
     """
     ent_d = calc_ent(D)
     ent_condition_d_a = calc_condition_ent(A,D)
-    return ent_d - ent_condition_d_a
+    return (ent_d - ent_condition_d_a)
 
 def calc_ent_gain_rate(A,D):
     """
@@ -175,7 +211,52 @@ def calc_condition_gini(A,D,a):
 
     return gini
 
+# ######################### 模型分类效果评价 ################
+
+
+
+
+def eval(y_true,y_predict):
+
+    from sklearn.metrics import average_precision_score
+    from sklearn.metrics import matthews_corrcoef
+    from sklearn.metrics import classification_report
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_curve, auc
+    from sklearn.metrics import precision_score, recall_score, f1_score
+
+    print('average_precision_score: %f' % (average_precision_score(y_true=y_true, y_score=y_predict)))
+    print('MMC: %f' % (matthews_corrcoef(y_true=y_true, y_pred=y_predict)))
+
+    print(classification_report(y_true=y_true, y_pred=y_predict))
+
+
+    # Calculate precision score
+    print(precision_score(y_true, y_predict, average='macro'))
+    print(precision_score(y_true, y_predict, average='micro'))
+    print(precision_score(y_true, y_predict, average=None))
+
+    # Calculate recall score
+    print(recall_score(y_true, y_predict, average='macro'))
+    print(recall_score(y_true, y_predict, average='micro'))
+    print(recall_score(y_true, y_predict, average=None))
+
+    # Calculate f1 score
+    print(f1_score(y_true, y_predict, average='macro'))
+    print(f1_score(y_true, y_predict, average='micro'))
+    print(f1_score(y_true, y_predict, average=None))
+
+    fpr, tpr, thresholds = roc_curve(y_true, y_predict)
+    roc_auc = auc(fpr, tpr)
+    # 画图，只需要plt.plot(fpr,tpr),变量roc_auc只是记录auc的值，通过auc()函数能计算出来
+    plt.plot(fpr, tpr, lw=1, label='ROC(area = %0.2f)' % (roc_auc))
+    plt.xlabel("FPR (False Positive Rate)")
+    plt.ylabel("TPR (True Positive Rate)")
+    plt.title("Receiver Operating Characteristic, ROC(AUC = %0.2f)" % (roc_auc))
+    plt.show()
+
 # ######################### TreeNode ################
+
 class TreeNode():
    """
    树节点类
@@ -202,13 +283,14 @@ class TreeNode():
        :param attr_name:属性名
        :param attr_value:属性值
        """
-
        setattr(self,attr_name,attr_value)
+
 # ######################### Decision Tree  ################
+
 class DecisionTree():
     def __init__(self,mode):
         self._tree = TreeNode() #指向根结点的指针
-        if mode == 'ID3' or mode == 'C4.5' or mode == 'CARTClassification' or mode == 'CARTRegression':
+        if mode == 'ID3' or mode == 'C4.5':
             self._mode = mode
         else:
             raise Exception('mode should is C4.5 or ID3 or CARTClassification or CARTRegression')
@@ -230,6 +312,7 @@ class DecisionTree():
         # classfiy one sample
         def _classfiy(node,sample):
             feature_index = node.feature_index
+            #叶子结点
             if feature_index == -1:
                 return node.type
             #
@@ -250,7 +333,7 @@ class DecisionTree():
         predict_labels = []
         for sample in tqdm(test_x):
             label = _classfiy(self._tree.next_nodes[0],list(sample))
-            if(label == None):
+            if(label == 1):
                 print(sample)
             predict_labels.append(label)
         return predict_labels
@@ -262,24 +345,24 @@ class DecisionTree():
         :param feature_list: 特征的id list
         :param epsoion:阈值
         :param start_node:决策树的启始结点
+        :param Vi: feature value
         :return: 指向决策树的根结点的指针
         """
         # 结点
         node = TreeNode()
-
         #若所有实例都属于一个类别
         C = set(y[:,0]) #分类的类别集合
         if(len(C) == 1 ):
             node.type = tuple(C)[0] #该Ck作为该结点的类标记
             start_node.add_next_node(node)
-            return self._tree
+            return
 
         # 特征集合A为空,将D中实例数最大的类Ck作为该结点的类标记
         if(len(feature_list) == 0):
             max_value = self._get_max_count_array(y[:,0])
             node.type = max_value
             start_node.add_next_node(node)
-            return self._tree
+            return
 
         # select feature
         if self._mode == 'ID3' or self._mode == 'C4.5':
@@ -292,27 +375,27 @@ class DecisionTree():
                 type_value = self._get_max_count_array(y[:, 0])
                 node.type = type_value
                 start_node.add_next_node(node)
-                return self._tree
+                return
             else:
                 node.feature_index = ent_max_feature_index
                 node.select_value = ent_gain_max
-                type_value = self._get_max_count_array(y[:, 0])
+                type_value = self._get_max_count_array(y[:,0])
                 node.type = type_value
                 if (Vi != -1):
                     node.add_attr_and_value("feature_value", Vi)
                 start_node.add_next_node(node)
                 # 获取选取的特征的所有可能值
-                Ag_v = set(X[:, ent_max_feature_index])
+                Ag_v = set(X[:,ent_max_feature_index])
                 # A - Ag
                 feature_list.remove(ent_max_feature_index)
                 # Di
                 for v in Ag_v:
                     # Di 为 Xi , yi
-                    mask = X[:, ent_max_feature_index] == v
+                    mask = X[:,ent_max_feature_index] == v
                     Xi = X[mask]
                     yi = y[mask]
                     self._create_tree(Xi, yi, feature_list, epsoion, node, Vi=v)
-
+                return
         elif self._mode =='CARTClassification':
             pass
         else:
