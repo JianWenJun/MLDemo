@@ -5,8 +5,10 @@
 #### 决策树相关算法
 [决策树相关算法——ID3、C4.5的详细说明及实现](https://blog.csdn.net/u014732537/article/details/79667599) —— [代码地址](https://github.com/JianWenJun/MLDemo/blob/master/ML/DecisionTree/decision_tree.py)
 >本篇博客记录的是使用python实现两个决策树相关的算法模型—— ID3、C4.5。其中训练模型使用的数据集是Adult。
+
 [决策树相关算法——Bagging之基于CART的随机森林详细说明与实现](https://blog.csdn.net/u014732537/article/details/79667679)
->本篇博客主要记录的是基于CART决策树实现的随机森林算法，主要是从以下四个方面介绍: CART决策树的构建思想；集成学习中的Bagging思想；基于CART决策树的随机森林代码实现；随机森林不易过拟合的分析。(其中不易过拟合并不是说随机森林不会过拟合) 
+>本篇博客主要记录的是基于CART决策树实现的随机森林算法，主要是从以下四个方面介绍: CART决策树的构建思想；集成学习中的Bagging思想；基于CART决策树的随机森林代码实现；随机森林不易过拟合的分析。(其中不易过拟合并不是说随机森林不会过拟合)
+
 #### 神经网络
 [TensorFlow实现多层感知机及可视化训练过程中的数据记录](http://blog.csdn.net/u014732537/article/details/79412672) —— [代码地址](https://github.com/JianWenJun/MLDemo/blob/master/ML/TensorDemo/NN_tf.py)
 >本篇博客主要有2个目的，第一，记录学习使用TensorFlow的操作流程；第二，将TensorFlow训练数据模型过程中的参数数据进行可视化记录。
