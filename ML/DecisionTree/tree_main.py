@@ -9,45 +9,28 @@ import time
 import numpy as np
 from sklearn.metrics import accuracy_score
 
-train_file = '../data/adult/adult.data'
-test_file = '../data/adult/adult.test'
-def test():
-    node = dt.TreeNode()
-    node.add_attr('name','jianwenjun')
-    # print (node.name)
-    a = []
-    a.append(node)
-    node1 =  dt.TreeNode()
-    node1.value =12
-    a.append(node1)
-    print(a[0].name)
-    print(a[1].value)
+from sklearn.tree import DecisionTreeClassifier
 
+train_file = '../data/adult/adult_deal_value.data'
+test_file = '../data/adult/adult_deal_value.test'
 
 if __name__ == '__main__':
     flods = [train_file,test_file]
     print('load data...')
     train_x, train_y, test_x, test_y = dt.load_data(flods)
     print('finish data load...')
-    start_time = time.time()
-    # print (dt.calc_ent(train_y))
-    # print (dt.calc_condition_ent(train_x[:,3],train_y))
-    # print (test_y[429,0])
-    # print (type(train_y[0][0]))
-    # train
-    # print(type(test_y[:,0]),test_y[:,0].shape)
+
+    my_decision_tree = dt.DecisionTree(mode='ID3')
+    my_decision_tree.train(train_x,train_y,0.01)
+    predict_y = my_decision_tree.predict(test_x)
+    print('my tree accuracy: %f' % (accuracy_score(y_true=test_y, y_pred=predict_y)))
 
 
+    decisiont_tr = DecisionTreeClassifier(criterion='entropy',max_depth=8,min_samples_split=9)
+    decisiont_tr.fit(train_x,train_y)
+    p_y =  decisiont_tr.predict(test_x)
+    print('sklearn tree accuracy: %f' % (accuracy_score(y_true=test_y, y_pred=p_y)))
+    print(decisiont_tr.feature_importances_)
 
 
-    # decision_tree = dt.DecisionTree(mode='ID3')
-    # print('train start ------')
-    # decision_tree.train(train_x,train_y,0.1)
-    # print('train finish ------')
-    # print('predict start ------')
-    #
-    # predict_y = decision_tree.predict(test_x)
-    #
-    #
-    # print('accuracy: %f' %(accuracy_score(y_true=test_y,y_pred=predict_y)))
 

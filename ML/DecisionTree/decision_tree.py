@@ -9,28 +9,141 @@ import numpy as np
 from sklearn.utils import shuffle
 import pickle
 from tqdm import tqdm
+import copy
 
 
 # ######################### 数据集操作 ################
-
-def adult_type(s):
+##dataframe中的值数值化，包括一些简单的连续值离散化处理
+def adult_label(x):
     """
     转换样本的类别
     :param s: key
     """
-    it = {'>50K': 1,'<=50K' : 0,'>50K.': 1,'<=50K.' : 0}
-    return it[s]
+    label = {'>50K': 1,'<=50K' : 0,'>50K.': 1,'<=50K.' : 0}
+    return label[x]
+def adult_age(x):
+    key = '17-35'
+    x = int(x)
+    if x>=36 and x<=53:
+        key = '36-53'
+    elif x>=54 and x<=71:
+        key = '54-71'
+    elif  x>=72 and x<=90:
+        key = '72-90'
+    age = {'17-35': 0, '36-53': 1, '54-71': 2, '72-90': 3}
+    return age[key]
+def adult_workclass(x):
+    workclass = {'Private': 0, 'Self-emp-not-inc': 1, 'Self-emp-inc': 2, 'Federal-gov': 3, 'Local-gov': 4,
+                 'State-gov': 5, 'Without-pay': 6}
+    return workclass[x]
+def adult_education(x):
+    education = {'Bachelors': 0, 'Some-college': 1, '11th': 2, 'HS-grad': 3, 'Prof-school': 4, 'Assoc-acdm': 5,
+                 'Assoc-voc': 6, '9th': 7,
+                 '7th-8th': 8, '12th': 9, 'Masters': 10, '1st-4th': 11, '10th': 12, 'Doctorate': 13, '5th-6th': 14,
+                 'Preschool': 15}
+    return education[x]
+def adult_education_num(x):
+    key = '1-4'
+    x = int(x)
+    if x>=5 and x<=8:
+        key = '5-8'
+    elif x>=9 and x<=12:
+        key = '9-12'
+    elif  x>=13 and x<=16:
+        key = '13-16'
+    education_num = {'1-4': 0, '5-8': 1, '9-12': 2, '13-16': 3}
+    return education_num[key]
+def adult_marital_status(x):
+    marital_status = {'Married-civ-spouse': 0, 'Divorced': 1, 'Never-married': 2, 'Separated': 3, 'Widowed': 4,
+                      'Married-spouse-absent': 5, 'Married-AF-spouse': 6}
+    return marital_status[x]
+def adult_occupation(x):
+    occupation = {'Tech-support': 0, 'Craft-repair': 1, 'Other-service': 2, 'Sales': 3, 'Exec-managerial': 4,
+                  'Prof-specialty': 5, 'Handlers-cleaners': 6, 'Machine-op-inspct': 7,
+                  'Adm-clerical': 8, 'Farming-fishing': 9, 'Transport-moving': 10, 'Priv-house-serv': 11,
+                  'Protective-serv': 12, 'Armed-Forces': 13}
+    return occupation[x]
+def adult_relationship(x):
+    relationship = {'Wife': 0, 'Own-child': 1, 'Husband': 2, 'Not-in-family': 3, 'Other-relative' :4, 'Unmarried': 5}
+    return relationship[x]
+def adult_race(x):
+    race = {'White': 0, 'Asian-Pac-Islander': 1, 'Amer-Indian-Eskimo': 2, 'Other': 3,'Black': 4}
+    return race[x]
+def adult_sex(x):
+    sex = {'Female': 0, 'Male': 1}
+    return sex[x]
+def adult_capital_gain_loss(x):
+    capital_gain_loss = {'=0': 0, '>0': 1}
+    key = '=0'
+    x = int(x)
+    if x>=0:
+        key = '>0'
+    return capital_gain_loss[key]
+def adult_hours_per_week(x):
+    hours_per_week = {'=40': 0, '>40': 1, '<40': 2}
+    key = '=40'
+    x = int(x)
+    if x > 40:
+        key = '>40'
+    elif x < 40:
+        key = '<40'
+    return hours_per_week[key]
+def adult_native_country(x):
+    key = 'USA'
+    native_country = {'USA': 0, 'not USA': 1}
+    if x != 'United-States ':
+        key = 'not USA'
+    return native_country[key]
 
-def load_data(flods,remove_unKnowValue=True,remove_duplicates=True):
-    adult_train_df = pd.read_table(flods[0], header=None ,sep=', ',converters={14:adult_type},
+def transToValues(file_name,save_name,remove_unKnowValue=True,remove_duplicates=True):
+
+    converters = {0: adult_age,1: adult_workclass,3: adult_education,4: adult_education_num,5: adult_marital_status,
+                  6: adult_occupation,7: adult_relationship,8: adult_race,9: adult_sex,10: adult_capital_gain_loss,
+                  11: adult_capital_gain_loss,12: adult_hours_per_week,13: adult_native_country,14: adult_label}
+    adult_df = pd.read_table(file_name, header=None ,sep=',',converters=converters,
                                    names=['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status',
                                           'occupation','relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
                                           'hours-per-week', 'native-country','label'],engine='python')
+    if remove_duplicates:
+        # 移除df中重复的值
+        adult_df.drop_duplicates(inplace=True)
+        print('delete duplicates shape train-test =================')
+        print(adult_df.shape)
 
-    adult_test_df = pd.read_table(flods[1], header=None, sep=', ', converters={14: adult_type},
-                                   names=['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status',
+    if remove_unKnowValue:
+        # 移除df中缺失的值
+        adult_df.replace(['?'], np.NaN, inplace=True)
+        adult_df.dropna(inplace=True)
+        print('delete unKnowValues shape train-test =================')
+        print(adult_df.shape)
+        adult_df.drop('fnlwgt',axis=1,inplace=True)
+
+    adult_df.to_csv(save_name,header=False,index=False)
+
+if __name__ == '__main__':
+    train_file = '../data/adult/adult.data'
+    test_file = '../data/adult/adult.test'
+
+    train_deal_file = '../data/adult/adult_deal.data'
+    test_deal_file = '../data/adult/adult_deal.test'
+
+    #deal with duplicates and unKnowValue
+    transToValues(train_file,train_deal_file)
+    transToValues(test_file,test_deal_file)
+
+    # trans to value
+    transToValues(train_deal_file,'../data/adult/adult_deal_value.data',remove_duplicates=False,remove_unKnowValue=False)
+    transToValues(test_deal_file,'../data/adult/adult_deal_value.test',remove_duplicates=False,remove_unKnowValue=False)
+
+def load_data(flods):
+    adult_train_df = pd.read_table(flods[0], header=None ,sep=',',
+                                   names=['age', 'workclass', 'education', 'education-num', 'marital-status',
+                                          'occupation','relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
+                                          'hours-per-week', 'native-country','label'],engine='python',dtype=int)
+    adult_test_df = pd.read_table(flods[1], header=None, sep=',',
+                                   names=['age', 'workclass', 'education', 'education-num', 'marital-status',
                                           'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
-                                          'hours-per-week', 'native-country', 'label'], engine='python')
+                                          'hours-per-week', 'native-country', 'label'], engine='python',dtype=int)
     # 打乱data中样本的顺序
     # adult_train_df = shuffle(adult_train_df)
     adult_train_df = adult_train_df.sample(frac=1).reset_index(drop=True)
@@ -40,46 +153,19 @@ def load_data(flods,remove_unKnowValue=True,remove_duplicates=True):
     print(adult_train_df.shape)
     print(adult_test_df.shape)
 
-
-    # 移除df中重复的值
-    if remove_duplicates:
-        adult_train_df.drop_duplicates(inplace=True)
-        adult_test_df.drop_duplicates(inplace=True)
-        print('delete duplicates shape train-test =================')
-        print(adult_train_df.shape)
-        print(adult_test_df.shape)
-
-    # 移除df中缺失的值
-    if remove_unKnowValue:
-        adult_train_df.replace(['?'],np.NaN,inplace=True)
-        adult_test_df.replace(['?'],np.NaN,inplace=True)
-        adult_train_df.dropna(inplace=True)
-        adult_test_df.dropna(inplace=True)
-        print('delete unKnowValues shape train-test =================')
-        print(adult_train_df.shape)
-        print(adult_test_df.shape)
-
     # 离散分段处理
     # D = np.array(adult_train_df['label']).reshape(adult_train_df.shape[0], 1)
     # age_did = devide_feature_value(adult_train_df['age'],D)
 
+    train_data_x = np.array(adult_train_df.iloc[:,0:13])
+    train_data_y = np.array(adult_train_df.iloc[:,13:])
 
-
-
-    print('last shape train-test =================')
-    print(adult_train_df.shape)
-    print(adult_test_df.shape)
-    # construct data
-
-    train_data_x = np.array(adult_train_df.iloc[:,0:14])
-    train_data_y = np.array(adult_train_df.iloc[:,14:])
-
-    test_data_x = np.array(adult_test_df.iloc[:, 0:14])
-    test_data_y = np.array(adult_test_df.iloc[:, 14:])
-
+    test_data_x = np.array(adult_test_df.iloc[:, 0:13])
+    test_data_y = np.array(adult_test_df.iloc[:, 13:])
 
     return train_data_x,train_data_y,test_data_x,test_data_y
 
+## 连续值离散处理
 def devide_feature_value(series,D):
     sets = set(series)
     mid_value = []
@@ -213,9 +299,6 @@ def calc_condition_gini(A,D,a):
 
 # ######################### 模型分类效果评价 ################
 
-
-
-
 def eval(y_true,y_predict):
 
     from sklearn.metrics import average_precision_score
@@ -304,6 +387,7 @@ class DecisionTree():
         feature_list = [index for index in range(train_x.shape[1])]
 
         self._create_tree(train_x,train_y,feature_list,epsoion,self._tree)
+        # print (22)
 
     def predict(self,test_x):
         if (len(self._tree.next_nodes) == 0):
@@ -333,8 +417,6 @@ class DecisionTree():
         predict_labels = []
         for sample in tqdm(test_x):
             label = _classfiy(self._tree.next_nodes[0],list(sample))
-            if(label == 1):
-                print(sample)
             predict_labels.append(label)
         return predict_labels
 
@@ -394,10 +476,9 @@ class DecisionTree():
                     mask = X[:,ent_max_feature_index] == v
                     Xi = X[mask]
                     yi = y[mask]
-                    self._create_tree(Xi, yi, feature_list, epsoion, node, Vi=v)
+                    feature_list_new = copy.deepcopy(feature_list)
+                    self._create_tree(Xi, yi, feature_list_new, epsoion, node, Vi=v)
                 return
-        elif self._mode =='CARTClassification':
-            pass
         else:
             pass
 
