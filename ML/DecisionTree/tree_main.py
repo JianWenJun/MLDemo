@@ -18,6 +18,8 @@ if __name__ == '__main__':
     flods = [train_file,test_file]
     print('load data...')
     train_x, train_y, test_x, test_y = dt.load_data(flods)
+
+    # print(type(train_x[:,0][0]))
     print('finish data load...')
 
     my_decision_tree = dt.DecisionTree(mode='ID3')
