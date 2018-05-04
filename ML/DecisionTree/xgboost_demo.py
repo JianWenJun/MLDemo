@@ -7,6 +7,7 @@
 import pandas as pd
 import numpy as np
 import re
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
@@ -124,7 +125,6 @@ def data_feature_engineering(full_data,age_default_avg=True,one_hot=True):
         # 后者是根据取值范围的各个取值的频率来换分，划分后的某个区间的频率数相同
         # print(dataset.tail())
         dataset['CategoricalAge'] = pd.cut(dataset['Age'], 5,labels=[0,1,2,3,4])
-
     return full_data
 def data_feature_select(full_data):
     """
@@ -279,13 +279,14 @@ if __name__ == '__main__':
     # XGBoost调参
     # xgboost_change_param(train_X,train_y)
 
-    xgb = XGBClassifier(learning_rate=0.1,n_estimators=59,
+    xgb1 = XGBClassifier(learning_rate=0.1,n_estimators=59,
                         max_depth=7,min_child_weight=3,
                         gamma=0.3,subsample=0.8,
                         colsample_bytree=0.6,objective='binary:logistic',
                         nthread=2,scale_pos_weight=1,seed=10)
-    xgb.fit(train_X,train_y)
+    xgb1.fit(train_X,train_y)
 
-    y_test_pre = xgb.predict(test_X)
+    y_test_pre = xgb1.predict(test_X)
     y_test_true = np.array(test_y['Survived'])
     print ("the xgboost model Accuracy : %.4g" % metrics.accuracy_score(y_pred=y_test_pre, y_true=y_test_true))
+
