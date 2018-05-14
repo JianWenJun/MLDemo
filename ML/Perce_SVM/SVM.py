@@ -187,7 +187,8 @@ class SVM():
 
         self.eCache = np.zeros(shape=(self.sample_num,2))# 存储差值
         self._smo()
-        self._update()
+
+        # self._update()
 
     def predict(self,test_x):
         # 《统计学习方法》——公式7.104，计算预测值
@@ -195,28 +196,15 @@ class SVM():
         for index in range(self.sample_num):
             pre_v = pre_v + self.a[index] * self.labels[index] * self._kernel(test_x,self.samples[index])
         pre_v = pre_v + self.b
-        return pre_v
-
-    def predict_s(self,test_x):
-        # 《统计学习方法》——公式7.104，计算预测值
-        pre_v = 0
-        for index in range(self.sample_num):
-            pre_v = pre_v + self.a[index] * self.labels[index] * self._kernel(test_x,self.samples[index])
-        pre_v = pre_v + self.b
-        y = 1
-        if pre_v < 0:
-            y = 0
-        else:
-            y = 1
-        return y
+        return np.sign(pre_v)
 
     def _smo(self):
-        pre_a = copy.deepcopy(self.a)  # 复制
+        pre_a = copy.deepcopy(self.a)  # 复制，pre_a是old的a数组
         for iter in range(self.maxIter):
             flag = 1
             for index in range(self.sample_num):
                 diff = 0
-                self._update()
+                # self._update()
                 E_i = self._calE(self.samples[index],self.labels[index])
                 j,E_j = self._chooseJ(index,E_i)
 
@@ -236,8 +224,27 @@ class SVM():
                     self.a[j] = H
                 elif self.a[j] < L:
                     self.a[j] = L
-                # 更新
+                # 《统计学习方法》——公式7.109，更新a[i]
+                self.a[index] = pre_a[index] + self.labels[index] * self.labels[j] * (pre_a[j] - self.a[j])
+
+                # 更新b,《统计学习方法》——公式7.114到7.116，更新a[i]
+                b1 = self.b - E_i \
+                     - self.labels[index] * self._kernel(self.samples[index],self.samples[index]) * (self.a[index] - pre_a[index]) \
+                     - self.labels[j] * self._kernel(self.samples[j],self.samples[index]) * (self.a[j] - pre_a[j])
+                b2 = self.b - E_j \
+                     - self.labels[index] * self._kernel(self.samples[index], self.samples[j]) * (
+                             self.a[index] - pre_a[index]) \
+                     - self.labels[j] * self._kernel(self.samples[j], self.samples[j]) * (self.a[j] - pre_a[j])
+                if (0 < self.a[index]< self.C):
+                    self.b = b1
+                elif (0 < self.a[j]< self.C):
+                    self.b = b2
+                else:
+                    self.b = (b1 + b2)/2.0
+
+                # 更新E_i,E_j统计学习方法》——公式7.117，
                 self.eCache[j] = [1,self._calE(self.samples[j],self.labels[j])]
+                self.eCache[index] = [1,self._calE(self.samples[index],self.labels[index])]
 
                 diff = sum([abs(pre_a[m] - self.a[m]) for m in range(len(self.a))])
                 if diff < self.epsilon:
@@ -247,17 +254,6 @@ class SVM():
 
                 if flag == 0:
                     break
-
-    def _calW(self):
-        """
-        :return: 计算W的公式
-        """
-        self.w = np.zeros((1,self.feature_num))
-        for index in range(self.sample_num):
-            for j in range(self.feature_num):
-                self.w[0][j] = self.w[0][j] + self.a[index] * self.labels[index] * self.samples[index][j]
-                # temp = temp + self.a[index] * self.labels[index] * self.samples[index]
-        # self.w = temp
 
     def _calE(self,sample,y):
         # 计算E_i,输入X_i与真实值之间的误差，《统计学习方法》——公式7.105
@@ -271,28 +267,6 @@ class SVM():
         else:
             return (max(0, a[j] + a[i] - self.C), min(self.C, a[j] + a[i]))
 
-    def _update(self):
-        # 更新w,b
-        self._calW()
-        # 核函数的计算b的公式
-        max_v = -99999
-        min_v = 99999
-        for index in range(self.sample_num):
-            res = self.w * self.samples[index]
-            # print(res[0].shape)
-            w_x = sum(res[0])
-
-            if self.labels[index] == -1:
-                # y_i =-1的情况
-                if w_x > max_v:
-                    max_v = w_x
-
-            else:
-                ## y_i = 1的情况
-                if w_x < min_v:
-                    min_v = w_x
-
-        self.b = self.b -  0.5 * (min_v + max_v)
 
     def _kernel(self,X_i,X_j):
         """
@@ -352,7 +326,6 @@ if __name__ == '__main__':
     train['Survived'] = train['Survived'].map(Passenger_Survived).astype(int)
     full_data = [train, test]
 
-
     full_data = data_feature_engineering(full_data, age_default_avg=True, one_hot=False)
     train_X, train_y, test_X = data_feature_select(full_data)
 
@@ -360,7 +333,7 @@ if __name__ == '__main__':
     svm1.train(train_X, train_y)
     results = []
     for test_sample in test_X:
-        y = svm1.predict_s(test_sample)
+        y = svm1.predict(test_sample)
         results.append(y)
 
     y_test_true = np.array(test_y['Survived'])
