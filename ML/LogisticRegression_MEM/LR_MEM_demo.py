@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import random
 import re
+import copy
 from collections import defaultdict
 from sklearn import metrics
 from sklearn.preprocessing import LabelBinarizer
@@ -197,12 +198,162 @@ class LR:
 
 class MEM:
     # 算法模型为：《统计学习方法》公式6.28&6.29
-    def __init__(self):
-        pass
+
+    def __init__(self,iterNum = 2000,epsion = 0.01):
+        self.epsion = epsion # 精度阈值
+        self.maxIter = iterNum
 
     def train(self,train_X,train_y):
         # 使用《统计学习方法》P92算法6.2——BFGS，求解参数
-        pass
+        self.feature_size = train_X.shape[1]
+        self.sample_num = train_X.shape[0]
+
+        self.samples = train_X
+        self.labels = train_y
+
+        # 统计数据集中的特征函数个数
+        self._cal_feature_func()
+        self._f2id()
+        self.n = len(self.P_x_y) # n为特征函数的个数
+        # 计算每个特征函数关于经验分布p(x,y)的期望，并保持于EPxy字典中
+        self._cal_EPxy()
+
+        self.w = np.zeros(self.n) #wi为拉格函数中的乘子
+        self.g = np.zeros(self.n) #对应g(w),《统计学习方法》P92,最上面g(w)的公式
+
+        self.B = np.eye(self.n) #正定对称矩阵
+
+        for iter in range(self.maxIter):
+
+            # 算法6.2——(2）
+            self._cal_Gw()
+            if self._cal_g_l2() < self.epsion:
+                break
+            # 算法6.2——(3）
+            p_k = - (self.B ** -1) * np.reshape(self.g,(self.n,1))
+
+            # np.linalg.solve()
+            # 算法6.2——(4）
+            r_k = self._cal_fw()
+
+            # 算法6.2——(5）
+            old_g = copy.deepcopy(self.g)
+            old_w = copy.deepcopy(self.w)
+
+            self.w = self.w + r_k * p_k
+            # 算法6.2——(6）
+            self._cal_Gw()
+            if self._cal_g_l2() < self.epsion:
+                break
+            y_k = self.g - old_g
+            fai_k = self.w - old_w
+
+            y_k = np.reshape(y_k,(self.n,1))
+            fai_k = np.reshape(fai_k,(self.n,1))
+
+            temp1 = np.dot(y_k,y_k.T) / float((np.dot(y_k.T,fai_k).reshape(1)[0]))
+            temp2 = np.dot(np.dot(np.dot(self.B,fai_k),fai_k.T),self.B) / float(np.dot(np.dot(fai_k.T,self.B),fai_k).reshape(1)[0])
+            self.B =self.B + temp1 - temp2
+            
+
+    def change_sample_feature_name(self,samples):
+        new_samples = []
+        for sample in samples:
+            new_sample = []
+            for feature_index,feature_v in enumerate(sample):
+                new_feature_v = 'x' + str(feature_index) + '_' + str(feature_v)
+                new_sample.append(new_feature_v)
+            new_samples.append(np.array(new_sample))
+        return np.array(new_samples)
+
+    def _cal_Pxy_Px(self):
+        # 从数据集中计算特征函数，f(x,y),有该样本就为1，没有则为0,x为样本X的某一个特征的取值
+        self.P_x_y = defaultdict(int) # 其中P_x_y的键的个数则为特征函数的个数。
+        self.P_x = defaultdict(int)
+
+        for index in range(self.sample_num):
+            # 取出样本值
+            sample = self.samples[index]
+            label = self.labels[index]
+
+            for feature_index in range(self.feature_size):
+                x = sample[feature_index]
+                y = label
+                self.P_x_y[(x,y)] = self.P_x_y[(x,y)] + 1
+                self.P_x[x]  = self.P_x[x] + 1
+
+    def _cal_EPxy(self):
+        #计算特征函数f关于经验分布的P(x,y)的期望值
+        self.EPxy = defaultdict(int) # 记录每个特征函数关于经验分布的P(x,y)的期望值
+        #遍历特征函数，求出期望值
+        for index in range(self.n):
+            (x,y) = self.id2f[index]
+            self.EPxy[index] = float(self.P_x_y[(x,y)]) / float(self.sample_num)
+
+    def _f2id(self):
+        #将index与特征函数对应起来
+        self.id2f = {}
+        self.f2id = {}
+        for index,(x,y) in enumerate(self.P_x_y):
+            self.id2f[index] = (x,y)
+            self.f2id[(x,y)] = index
+
+    def _cal_Pw(self,X,y):
+        #《统计学习方法》公式6.28,计算Pw(y|x)，此处y只取0或1
+        res = 0.
+        for feature_v in X:
+            if self.f2id.has_key((feature_v,y)):
+                index = self.f2id[(feature_v,y)]
+                res = res + (self.w[index] * 1)
+
+        if y == 0:
+            y = 1
+        else:
+            y = 0
+
+        res_y = 0.
+        for feature_v in X:
+            if self.f2id.has_key((feature_v,y)):
+                index = self.f2id[(feature_v,y)]
+                res_y = res_y + (self.w[index] * 1)
+        return float(res) / float(res + res_y)
+
+    def _cal_Gw(self):
+
+        # 计算f(w)对w_i的偏导数，《统计学习方法》P92,最上面g(w)的公式
+        for index in range(self.n):
+            res = 0.
+            (x,y) = self.id2f[index]
+            feature_index = int(x[1])
+            # 累加
+            for sample_index in range(self.sample_num):
+                sample = self.samples[index]
+                label = self.labels[index]
+
+                if label != y:
+                    continue
+                if sample[feature_index] != x:
+                    continue
+
+                p_w = self._cal_Pw(sample, y)
+                num = 0
+                for feature_v in sample:
+                    num = self.P_x[feature_v] + num
+                #《统计学习方法》P82,计算P(X=x)公式
+                p_x = float(num) / float(self.sample_num)
+                res = res + p_w * p_x * 1 # 1为f_i特征函数的值
+
+            self.g[index] = res - self.EPxy[index]
+
+    def _cal_g_l2(self):
+        res = sum(self.g * self.g) ** 0.5
+        return res
+
+    def _cal_fw(self):
+        # 《统计学习方法》P91,f(w)计算公式
+        res
+        for index in range(self.n):
+            (x,y) = self.id2f(index)
 
 
 if __name__ == '__main__':
@@ -216,16 +367,23 @@ if __name__ == '__main__':
     full_data = data_feature_engineering(full_data, age_default_avg=True, one_hot=False)
     train_X, train_y, test_X = data_feature_select(full_data)
 
-    lr = LR(iterNum=2000,learn_late=0.001)
+    # lr = LR(iterNum=2000,learn_late=0.001)
+    #
+    # lr.train(train_X, train_y)
+    #
+    # results = []
+    # for test_sample in test_X:
+    #     sample = list(test_sample)
+    #     sample.append(1.0)
+    #     result = lr.predict(sample)
+    #     results.append(result)
+    #
+    # y_test_true = np.array(test_y['Survived'])
+    # print("the LR model Accuracy : %.4g" % metrics.accuracy_score(y_pred=results, y_true=y_test_true))
 
-    lr.train(train_X, train_y)
-
-    results = []
-    for test_sample in test_X:
-        sample = list(test_sample)
-        sample.append(1.0)
-        result = lr.predict(sample)
-        results.append(result)
-
-    y_test_true = np.array(test_y['Survived'])
-    print("the LR model Accuracy : %.4g" % metrics.accuracy_score(y_pred=results, y_true=y_test_true))
+    mem = MEM()
+    # 对于包含多特征属性的样本需要重新给每个属性值定义，用于区分f(x,y)中的x
+    print(train_X[0:5])
+    print('==============')
+    print (mem.change_sample_feature_name(train_X[0:5]))
+    # mem.train(train_X,train_y)
