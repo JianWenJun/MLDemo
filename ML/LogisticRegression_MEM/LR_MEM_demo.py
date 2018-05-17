@@ -234,7 +234,7 @@ class MEM:
 
             # np.linalg.solve()
             # 算法6.2——(4）
-            r_k = self._cal_fw()
+            r_k = self._liear_search(p_k)
 
             # 算法6.2——(5）
             old_g = copy.deepcopy(self.g)
@@ -254,7 +254,7 @@ class MEM:
             temp1 = np.dot(y_k,y_k.T) / float((np.dot(y_k.T,fai_k).reshape(1)[0]))
             temp2 = np.dot(np.dot(np.dot(self.B,fai_k),fai_k.T),self.B) / float(np.dot(np.dot(fai_k.T,self.B),fai_k).reshape(1)[0])
             self.B =self.B + temp1 - temp2
-            
+
 
     def change_sample_feature_name(self,samples):
         new_samples = []
@@ -349,11 +349,18 @@ class MEM:
         res = sum(self.g * self.g) ** 0.5
         return res
 
-    def _cal_fw(self):
-        # 《统计学习方法》P91,f(w)计算公式
-        res
-        for index in range(self.n):
-            (x,y) = self.id2f(index)
+    def _liear_search(self,p_k):
+        # 一维搜索，求r_k,使得f(w_k + r_k * p_k)极小
+        # new_w = self.w + r_k * p_k
+        # r_k = argmin f(w_k + r_k * p_k)
+        pass
+
+
+    # def _cal_fw(self):
+    #     # 《统计学习方法》P91,f(w)计算公式
+    #     res
+    #     for index in range(self.n):
+    #         (x,y) = self.id2f(index)
 
 
 if __name__ == '__main__':
