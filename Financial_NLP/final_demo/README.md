@@ -70,9 +70,7 @@ project.save_features(feature_train, feature_test, col_names, feature_name)
 
 ##### 4.整个项目的运行
 **./final_demo/main.py**
-3个步骤：
 step1 选出你的抽取特征的方法名组合成list
-
 step2 加载多个抽取方法抽取出的特征数据和训练集的label数据
 调用方法：
 project.load_feature_lists(feature_names_list)
