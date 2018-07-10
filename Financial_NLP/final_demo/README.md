@@ -33,7 +33,7 @@ project = Project.init('/Users/jian/PythonPrMl/Financial_NLP/atec',create_dir=Fa
 
 ##### 2.文本的预处理工作(哪步工作已经做过后，可以对相应的步骤进行注释)
 **./final_demo/data_prepare.py**
-# step 1 # 预处理文本
+step 1 预处理文本
     jieba.load_userdict(project.aux_dir + dict_path)
     data_local_df = pd.read_csv(project.data_dir + train_all, sep='\t', header=None,
                                 names=["index", "s1", "s2", "label"])
@@ -47,11 +47,11 @@ project = Project.init('/Users/jian/PythonPrMl/Financial_NLP/atec',create_dir=Fa
     # 保存label
     project.save(project.features_dir + 'y_0.6_train.pickle', data_local_df['label'].tolist())
 
-# step 2 # 利用训练集做语料库训练词向量
+step 2 利用训练集做语料库训练词向量
 
     pre_train_w2v()
 
-#  step 3 # 保存训练集中的词汇对应的词向量矩阵，总共有3种方式
+step 3 保存训练集中的词汇对应的词向量矩阵，总共有3种方式
     process_save_embedding_wv('zhihu_w2v_embedding_matrix.pickle',type=1,isStore_ids=True)
     process_save_embedding_wv('zhihu_w2v_embedding_matrix.pickle',type=2,isStore_ids=False)
     process_save_embedding_wv('zhihu_w2v_embedding_matrix.pickle',type=3,isStore_ids=False)
