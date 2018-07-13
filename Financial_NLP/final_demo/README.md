@@ -29,4 +29,4 @@ python extract_feature.py
 python main.py
 ```
 #### 3赛题思路
-[蚂蚁金融NLP竞赛——文本语义相似度赛题总结]()
+[蚂蚁金融NLP竞赛——文本语义相似度赛题总结](https://jianwenjun.xyz/2018/07/13/%E8%9A%82%E8%9A%81%E9%87%91%E8%9E%8DNLP%E7%AB%9E%E8%B5%9B%E2%80%94%E2%80%94%E6%96%87%E6%9C%AC%E8%AF%AD%E4%B9%89%E7%9B%B8%E4%BC%BC%E5%BA%A6%E8%B5%9B%E9%A2%98%E6%80%BB%E7%BB%93/)
