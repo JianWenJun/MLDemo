@@ -1,2 +1,2 @@
-#### 2018达观杯文本智能处理挑战赛
+#### pytorch TextCNN的实现
 参考模型:Char_CNN and Word_CNN
