@@ -81,9 +81,10 @@ class Text_WCCNN(nn.Module):
 
         # article char
         self.article_encoder_cnn = encoder_cnn(self.config, char_filter_sizes, char_filter_nums, char_vocab_size, art_embedding)
+        # self.word_encoder_cnn = encoder_cnn(self.config, word_filter_sizes, word_filter_nums, word_vocab_size, word_embedding)
 
         # multi cnn layer
-        self.word_encoder_cnn = [nn.Sequential(
+        word_encoder_cnns = [nn.Sequential(
             # first layer cnn
             # [batch,1,seq_length,emb_size] -> [batch,filter_num,seq_length,1]
             nn.Conv2d(in_channels=1,out_channels=filter_num,kernel_size=(fliter_size,config.word_emb_size),padding=((fliter_size//2, 0))),
@@ -91,14 +92,16 @@ class Text_WCCNN(nn.Module):
             nn.ReLU(inplace=True),
 
             # second layer cnn
-            nn.Conv2d(in_channels=filter_num,out_channels=filter_num,kernel_size=(fliter_size,config.word_emb_size),padding=((fliter_size//2, 0))),
+            nn.Conv2d(in_channels=filter_num,out_channels=filter_num,kernel_size=(fliter_size,1),padding=((fliter_size//2, 0))),
             nn.BatchNorm2d(filter_num),
-            nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=(config.seq_length - fliter_size * 2 + fliter_size//2+1))
+            nn.ReLU(inplace=True) # ,
+            # nn.MaxPool1d(kernel_size=(config.seq_length - fliter_size * 2 + fliter_size//2+1))
         )
         for (filter_num,fliter_size) in zip(word_filter_nums,word_filter_sizes)]
+        self.word_contexts = nn.ModuleList(word_encoder_cnns)
 
         # flat layer
+
         self.fc = nn.Sequential(
             nn.Linear(sum(char_filter_nums) + sum(word_filter_nums),config.linear_hidden_size),
             nn.BatchNorm1d(config.linear_hidden_size),
@@ -108,15 +111,22 @@ class Text_WCCNN(nn.Module):
 
     def forward(self, article, word_seg):
 
+        article_context = self.article_encoder_cnn(article)  # [batch,sum(char_filter_nums)]
+        # word_context = self.word_encoder_cnn(word_seg)  # [batch,sum(char_filter_nums)]
         word_embs = self.word_embedding(word_seg) # [batch, seq_length] -> [batch,seq_length,emb_size]
         x = torch.unsqueeze(word_embs, 1)  # [batch,seq_length,emb_size] -> [batch,1,seq_length,emb_size] add input channel
 
-        word_convs = [word_conv(x) for word_conv in self.word_encoder_cnn]
-        word_context = torch.cat(word_convs, 1) # [batch,sum(word_filter_nums)]
-        article_context = self.article_encoder_cnn(article) # [batch,sum(char_filter_nums)]
+        # word_convs = [word_conv(x) for word_conv in self.word_encoder_cnn]
+        word_convs = []
+        for word_conv in self.word_contexts:
+            x2 = word_conv(x)
+            x2 = torch.squeeze(x2, -1)  # [batch,filter_num,seq_length,1] -> [batch,filter_num,seq_length]
+            x2 = F.max_pool1d(x2,x2.size(2)).squeeze(2)
+            word_convs.append(x2)
 
+        word_context = torch.cat(word_convs, 1) # [batch,sum(word_filter_nums)]
         flat_out = torch.cat((word_context,article_context),1) # [batch,sum(char_filter_nums) + sum(word_filter_nums)]
-        flat_out = self.fc(flat_out)
+        flat_out = self.fc((flat_out))
         return flat_out
 
 
