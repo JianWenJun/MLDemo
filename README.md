@@ -38,4 +38,7 @@ HEXO个人博客地址：[小简铺子](https://jianwenjun.xyz)
 > 本篇博客记录的是论文Convolutional Neural Networks for Sentence Classification中的实验实现过程，一篇介绍使用CNN对句子进行分类的论文。尽管网上有些代码已经实现了使用CNN进行句子分类(TextCNN),但是是基于Theano来实现的，本文将介绍使用TensorFlow来实现整个论文的实验过程，一方面熟悉使用TensorFlow API,另一方面加深自己对CNN在NLP上的应用的理解. 
 
 [蚂蚁金融NLP竞赛——文本语义相似度赛题总结](https://jianwenjun.xyz/) —— [代码地址](https://github.com/JianWenJun/MLDemo/blob/master/Financial_NLP/final_demo/README.md)
+
+[中文文本关键词提取实例]——[项目说明及代码](https://github.com/JianWenJun/MLDemo/blob/master/NLP/Multi_Label/ShengCe/%E7%A5%9E%E7%AD%96%E6%9D%AF%2B14%2B%E5%B0%B1%E5%B7%AE%E9%82%A3%E4%B9%88%E4%B8%80%E7%82%B9%E7%82%B9%2B%E9%A1%B9%E7%9B%AE%E8%AF%B4%E6%98%8E.pdf)
+
 ##### 码代码不易，欢迎star~ ，谢谢~
