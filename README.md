@@ -41,4 +41,6 @@ HEXO个人博客地址：[小简铺子](https://jianwenjun.xyz)
 
 [中文文本关键词提取实例——项目说明及代码](https://github.com/JianWenJun/MLDemo/blob/master/NLP/Multi_Label/ShengCe/%E7%A5%9E%E7%AD%96%E6%9D%AF%2B14%2B%E5%B0%B1%E5%B7%AE%E9%82%A3%E4%B9%88%E4%B8%80%E7%82%B9%E7%82%B9%2B%E9%A1%B9%E7%9B%AE%E8%AF%B4%E6%98%8E.pdf)
 
+[文本生成之自动标题](https://github.com/JianWenJun/MLDemo/tree/master/NLP/AutoTitle_F)
+
 ##### 码代码不易，欢迎star~ ，谢谢~
