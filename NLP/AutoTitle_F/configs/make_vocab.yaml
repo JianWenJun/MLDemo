@@ -1,0 +1,12 @@
+makevocab: True
+max_lines: 0
+train_path: '../data/preprocessed/train_set_last1_all.csv'
+val_path: '../data/preprocessed/val_set_last1_1000.csv'
+test_path: '../data/preprocessed/test_set_last1_1000.csv'
+vocab_path: '../data/preprocessed/vocab_200000'
+vocab_max_size: 200000
+vocab_min_freq: 5
+truncated: False
+rand_state: 443
+
+
