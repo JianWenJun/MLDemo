@@ -43,4 +43,6 @@ HEXO个人博客地址：[小简铺子](https://jianwenjun.xyz)
 
 2.4 [文本生成之自动标题](https://github.com/JianWenJun/MLDemo/tree/master/NLP/AutoTitle_F)
 
+2.5 [文本生成之对抗神经网络GAN](https://github.com/JianWenJun/MLDemo/blob/master/NLP/GAN%26NLP.md)
+
 ##### 码代码不易，欢迎star~ ，谢谢~
